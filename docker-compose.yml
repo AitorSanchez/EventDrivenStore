@@ -1,0 +1,117 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EventDrivenStore — Docker Compose
+# Orchestrates: MongoDB, RabbitMQ, API service, Worker service
+# Usage:
+#   docker compose up --build          # start all services
+#   docker compose up -d mongo rabbitmq # infra only (for local dev)
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  store-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+services:
+
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: eventstore-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - store-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── RabbitMQ (with Management UI) ─────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: eventstore-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI  →  http://localhost:15672  (guest/guest)
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - store-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── API Service ───────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: eventstore-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      # Override host-oriented values for in-network resolution
+      MONGO_URI: mongodb://mongo:27017/eventstore
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: development
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - store-net
+    volumes:
+      # Hot-reload: mount source in dev; remove in production builds
+      - ./api/src:/app/src:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ── Worker Service ────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: eventstore-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/eventstore
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      NODE_ENV: development
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - store-net
+    volumes:
+      - ./worker/src:/app/src:ro
