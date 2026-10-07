@@ -1,24 +1,25 @@
-.PHONY: du dr den de dd test test-api test-ui help
+.PHONY: du dr den de dd test test-api test-ui test-postman help
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  make du    - Start all containers in detached mode (docker-compose up -d)"
-	@echo "  make dr    - Restart all containers (docker-compose restart)"
-	@echo "  make den   - Enter the frontend container console (sh)"
-	@echo "  make de    - Enter the api container console (sh)"
-	@echo "  make dd        - Destroy all containers, networks, and volumes (docker-compose down -v)"
-	@echo "  make test      - Run tests for both API and Worker services"
-	@echo "  make test-api  - Run tests for the API service only"
-	@echo "  make test-ui   - Run tests for the Frontend (UI) service only"
+	@echo "  make du           - Start all containers in detached mode (docker-compose up -d)"
+	@echo "  make dr           - Restart all containers (docker-compose restart)"
+	@echo "  make den          - Enter the frontend container console (sh)"
+	@echo "  make de           - Enter the api container console (sh)"
+	@echo "  make dd           - Destroy all containers, networks, and volumes (docker-compose down -v)"
+	@echo "  make test         - Run tests for both API and Worker services"
+	@echo "  make test-api     - Run tests for the API service only"
+	@echo "  make test-ui      - Run tests for the Frontend (UI) service only"
+	@echo "  make test-postman - Execute Postman collection tests using Newman in API container"
 
 # Start the containers
 du:
-	docker compose up -d
+	docker-compose up -d
 
 # Restart the containers
 dr:
-	docker compose restart
+	docker-compose restart
 
 # Enter the frontend container shell
 # Note: The frontend container name will be eventstore-frontend once Phase 4 is built
@@ -31,7 +32,7 @@ de:
 
 # Destroy all containers and volumes
 dd:
-	docker compose down -v
+	docker-compose down -v
 
 # Run tests
 test: test-api test-ui
@@ -47,3 +48,8 @@ test-api:
 test-ui:
 	@echo "Running Frontend tests..."
 	cd frontend && npm test
+
+# Run Postman integration tests via Newman in API container
+test-postman:
+	@echo "Running Postman integration tests..."
+	docker exec -it eventstore-api npx newman run /app/tests/postman/postman_collection.json
