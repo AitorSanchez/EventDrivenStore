@@ -86,6 +86,8 @@ services:
     volumes:
       # Hot-reload: mount source in dev; remove in production builds
       - ./api/src:/app/src:ro
+      - ./api/tsconfig.json:/app/tsconfig.json:ro
+      - ./api/tests:/app/tests:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:3000/health || exit 1"]
       interval: 15s
@@ -115,3 +117,4 @@ services:
       - store-net
     volumes:
       - ./worker/src:/app/src:ro
+      - ./worker/tsconfig.json:/app/tsconfig.json:ro
