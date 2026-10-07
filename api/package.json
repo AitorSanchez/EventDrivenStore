@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "test": "jest --coverage --passWithNoTests",
     "test:watch": "jest --watch",
+    "test:postman": "newman run /app/tests/postman/postman_collection.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },
@@ -28,6 +29,7 @@
     "@types/node": "^20.14.2",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
+    "newman": "^6.1.2",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.5",
     "ts-node-dev": "^2.0.0",
