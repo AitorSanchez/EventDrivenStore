@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import * as orderService from '../services/orderService';
+import { commandBus, queryBus } from '../container';
+import { CreateOrderCommand } from '../application/commands/createOrder.command';
+import { CreateOrderResult } from '../application/commands/createOrder.handler';
+import { GetOrderByIdQuery } from '../application/queries/getOrderById.query';
+import { OrderViewData } from '../ports/orderRepository.port';
 
 export async function createOrder(
   req: Request,
@@ -7,11 +11,17 @@ export async function createOrder(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { order, eventId } = await orderService.createOrder(req.body);
+    const command = new CreateOrderCommand(
+      req.body.productId,
+      req.body.quantity,
+      req.body.customerEmail,
+    );
+    const { order, eventId } = await commandBus.execute<CreateOrderResult>(command);
+
     // 202 Accepted: stock is reserved, payment processing is asynchronous
     res.status(202).json({
       message: 'Order accepted. Payment is being processed.',
-      orderId: order._id,
+      orderId: order.id,
       status: order.status,
       eventId,
     });
@@ -26,7 +36,8 @@ export async function getOrder(
   next: NextFunction
 ): Promise<void> {
   try {
-    const order = await orderService.getOrderById(req.params.id);
+    const query = new GetOrderByIdQuery(req.params.id);
+    const order = await queryBus.execute<OrderViewData | null>(query);
     if (!order) {
       res.status(404).json({ error: 'Order not found', code: 'ORDER_NOT_FOUND' });
       return;

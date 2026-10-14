@@ -25,8 +25,58 @@ This project implements an **Early Reservation Pattern (Synchronous Reservation 
 
 ### Architectural Patterns Used
 - **Event-Driven Architecture:** Services communicate via RabbitMQ events rather than direct HTTP calls.
-- **Clean Architecture:** Strict separation between routes, controllers, and the business logic (services).
+- **Hexagonal Architecture (Ports & Adapters):** Core business logic is decoupled from external tools, databases, and message brokers via explicit interfaces.
+- **CQRS (Command Query Responsibility Segregation):** Write operations (Commands) and read operations (Queries) are split into dedicated handlers and dispatched via an in-memory bus.
 - **Idempotency & Resiliency:** MongoDB `$inc` operations are used to prevent race conditions, and RabbitMQ `ack`/`nack` disciplines ensure no messages are lost if a worker fails.
+
+---
+
+## 🏛️ Hexagonal Architecture & CQRS (API Service)
+
+The API service (`api/src/`) is structured following **Hexagonal Architecture (Ports & Adapters)** combined with a lightweight **CQRS** pattern:
+
+```text
+api/src/
+├── domain/                  # Enterprise business rules & typed domain errors (framework-free)
+│   └── errors.ts
+│
+├── ports/                   # Inbound & outbound contracts (interfaces only)
+│   ├── productRepository.port.ts
+│   ├── orderRepository.port.ts
+│   └── eventPublisher.port.ts
+│
+├── application/             # Application business logic (CQRS)
+│   ├── bus/                 # CommandBus & QueryBus dispatchers
+│   │   ├── commandBus.ts
+│   │   └── queryBus.ts
+│   ├── commands/            # Write operations (Command DTOs + Handlers)
+│   │   ├── createOrder.{command,handler}.ts
+│   │   ├── createProduct.{command,handler}.ts
+│   │   └── updateProduct.{command,handler}.ts
+│   └── queries/             # Read operations (Query DTOs + Handlers)
+│       ├── getOrderById.{query,handler}.ts
+│       ├── getProductById.{query,handler}.ts
+│       └── listProducts.{query,handler}.ts
+│
+├── infrastructure/          # Adapters (implementing ports)
+│   ├── database/            # Mongoose implementations (MongoProductRepository, MongoOrderRepository)
+│   └── messaging/           # AMQP implementations (RabbitMqPublisher)
+│
+├── controllers/             # Thin HTTP endpoints delegating to CommandBus/QueryBus
+├── container.ts             # Composition Root (Dependency Injection & bus registration)
+└── app.ts / index.ts        # Express setup & server bootloader
+```
+
+### Key Architectural Benefits:
+
+1. **Decoupled from Frameworks & Storage:**  
+   Command and Query handlers only depend on abstract ports (`IProductRepository`, `IOrderRepository`, `IEventPublisher`). MongoDB or RabbitMQ can be replaced or mocked without modifying a single line of business logic.
+2. **Command & Query Separation:**  
+   Write side (e.g. stock reservations, order placement) and read side (e.g. product listings, order lookups) are strictly segregated, making each flow focused, easily auditable, and testable.
+3. **Dispatcher Pattern (`CommandBus` & `QueryBus`):**  
+   Express controllers do not instantiate or couple to specific handlers. Controllers dispatch commands/queries via the bus (`commandBus.execute(new CreateOrderCommand(...))`), enabling cross-cutting concerns (logging, metrics, validation) to be applied transparently.
+4. **Isolated Unit Testing:**  
+   Because all handlers receive ports via constructor injection, unit tests run purely in-memory using lightweight mocks without spinning up MongoDB or RabbitMQ.
 
 ---
 

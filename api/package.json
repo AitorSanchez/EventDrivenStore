@@ -39,6 +39,7 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "roots": ["<rootDir>/src", "<rootDir>/tests"],
+    "setupFiles": ["<rootDir>/tests/setup.ts"],
     "collectCoverageFrom": ["src/**/*.ts", "!src/index.ts"],
     "coverageThreshold": {
       "global": {
