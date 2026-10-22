@@ -118,3 +118,4 @@ services:
     volumes:
       - ./worker/src:/app/src:ro
       - ./worker/tsconfig.json:/app/tsconfig.json:ro
+      - ./worker/tests:/app/tests:ro

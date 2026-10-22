@@ -1,26 +1,54 @@
-/**
- * EventDrivenStore — Worker Service Entry Point (stub)
- *
- * Phase 3 will expand this into:
- *  - MongoDB connection with retry
- *  - RabbitMQ consumer bootstrap (DLX, prefetch, ack/nack discipline)
- *  - Per-event consumer registration
- */
+import pino from 'pino';
+import { connectDB, disconnectDB } from './config/db';
+import { connectRabbitMQ, disconnectRabbitMQ } from './config/rabbitmq';
+import { OrderCreatedConsumer } from './consumers/orderCreated.consumer';
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672';
+const logger = pino({ name: 'worker' });
 
-console.log(`[worker] Starting — broker: ${RABBITMQ_URL}`);
-console.log('[worker] No consumers registered yet. Phase 3 coming soon.');
+// ── Validate required env vars at startup ─────────────────────────────────────
+const REQUIRED_ENV = ['MONGO_URI', 'RABBITMQ_URL'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    logger.fatal({ key }, `Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
 
-// Prevent the process from exiting while waiting for events
-process.stdin.resume();
+async function bootstrap(): Promise<void> {
+  try {
+    logger.info('Starting Worker service...');
 
-process.on('SIGTERM', () => {
-  console.log('[worker] SIGTERM received — shutting down gracefully');
-  process.exit(0);
-});
+    // Connect to MongoDB
+    await connectDB();
 
-process.on('SIGINT', () => {
-  console.log('[worker] SIGINT received — shutting down gracefully');
-  process.exit(0);
-});
+    // Connect to RabbitMQ and assert topology (DLX, DLQ, exchange, queues)
+    const channel = await connectRabbitMQ();
+
+    // Register event consumers
+    const orderConsumer = new OrderCreatedConsumer(channel);
+    await orderConsumer.start();
+
+    logger.info('Worker service is running and listening for events');
+  } catch (err) {
+    logger.fatal({ err }, 'Fatal error during worker bootstrap');
+    process.exit(1);
+  }
+}
+
+async function gracefulShutdown(signal: string): Promise<void> {
+  logger.info({ signal }, 'Shutting down worker service gracefully...');
+  try {
+    await disconnectRabbitMQ();
+    await disconnectDB();
+    logger.info('Worker service stopped cleanly');
+    process.exit(0);
+  } catch (err) {
+    logger.error({ err }, 'Error during graceful shutdown');
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+bootstrap();

@@ -1,4 +1,4 @@
-.PHONY: du dr den de dd test test-api test-ui test-postman help
+.PHONY: du dr den de dd test test-api test-worker test-ui test-postman help
 
 # Default target
 help:
@@ -8,8 +8,9 @@ help:
 	@echo "  make den          - Enter the frontend container console (sh)"
 	@echo "  make de           - Enter the api container console (sh)"
 	@echo "  make dd           - Destroy all containers, networks, and volumes (docker-compose down -v)"
-	@echo "  make test         - Run tests for both API and Worker services"
+	@echo "  make test         - Run tests for all services"
 	@echo "  make test-api     - Run tests for the API service only"
+	@echo "  make test-worker  - Run tests for the Worker service only"
 	@echo "  make test-ui      - Run tests for the Frontend (UI) service only"
 	@echo "  make test-postman - Execute Postman collection tests using Newman in API container"
 
@@ -35,19 +36,22 @@ dd:
 	docker-compose down -v
 
 # Run tests
-test: test-api test-ui
-	@echo "\nRunning Worker tests..."
-	cd worker && npm test
+test: test-api test-worker
 
 # Run API tests
 test-api:
 	@echo "Running API tests..."
-	cd api && npm test
+	docker exec eventstore-api npm test || (cd api && npm test)
+
+# Run Worker tests
+test-worker:
+	@echo "Running Worker tests..."
+	docker exec eventstore-worker npm test
 
 # Run Frontend tests
 test-ui:
 	@echo "Running Frontend tests..."
-	cd frontend && npm test
+	@if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then cd frontend && npm test; else echo "Frontend (Phase 4) not implemented yet."; fi
 
 # Run Postman integration tests via Newman in API container
 test-postman:
