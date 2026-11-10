@@ -80,7 +80,63 @@ api/src/
 
 ---
 
+## 🎨 Frontend — Feature-First / Clean Architecture
+
+The React frontend (`frontend/src/`) follows a **Feature-First** pattern aligned with **Clean Frontend** principles.  
+Each business feature is a self-contained module that owns its domain types, API adapters, hooks, and UI components.
+
+### Key rules
+
+1. **No business logic in visual components** — components receive typed props and render UI.
+2. **Custom hooks encapsulate effects & state** — data fetching, loading, and error states live in hooks, never in JSX.
+3. **Features are isolated modules** — external consumers import only via the feature's barrel export (`index.ts`).
+4. **Shared code is cross-cutting** — the global HTTP client, generic UI components, and utilities live in `shared/`.
+
+### Directory structure
+
+```text
+frontend/src/
+├── App.tsx                          # Shell that composes features
+├── main.tsx                         # Vite entry point
+│
+├── shared/                          # Global, cross-cutting code
+│   ├── api/
+│   │   └── httpClient.ts            # Generic fetch wrapper (base URL, headers, errors)
+│   ├── components/                  # Reusable UI (buttons, layouts, modals)
+│   └── utils/                       # Shared helpers & formatters
+│
+└── features/                        # Isolated business modules
+    └── catalog/
+        ├── index.ts                 # Barrel export — public API of the feature
+        ├── api/
+        │   └── productApi.ts        # Network adapter (uses shared httpClient)
+        ├── components/
+        │   ├── CatalogList.tsx      # List view — orchestrates hook + cards
+        │   └── ProductCard.tsx      # Presentational card (zero logic)
+        ├── domain/
+        │   └── types.ts             # Product interface (framework-agnostic)
+        └── hooks/
+            └── useProducts.ts       # Data-fetching hook (loading, error, data)
+```
+
+### Dependency flow
+
+```text
+App.tsx
+  └─▶ features/catalog (barrel)
+         ├─▶ hooks/useProducts
+         │      └─▶ api/productApi
+         │             └─▶ shared/api/httpClient
+         └─▶ components/ProductCard
+                └─▶ domain/types
+```
+
+> Components never import from `shared/api/` or `features/*/api/` directly — hooks are the boundary.
+
+---
+
 ## 🚀 Setup Instructions
+
 
 1. **Clone the repository** (if you haven't already).
 2. **Set up environment variables:**
