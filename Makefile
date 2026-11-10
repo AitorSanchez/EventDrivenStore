@@ -36,7 +36,7 @@ dd:
 	docker-compose down -v
 
 # Run tests
-test: test-api test-worker
+test: test-api test-worker test-ui
 
 # Run API tests
 test-api:
@@ -51,7 +51,7 @@ test-worker:
 # Run Frontend tests
 test-ui:
 	@echo "Running Frontend tests..."
-	@if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then cd frontend && npm test; else echo "Frontend (Phase 4) not implemented yet."; fi
+	docker exec eventstore-frontend npm test || docker run --rm -v $(CURDIR)/frontend:/app -w /app node:20-alpine npm test
 
 # Run Postman integration tests via Newman in API container
 test-postman:
