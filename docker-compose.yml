@@ -119,3 +119,26 @@ services:
       - ./worker/src:/app/src:ro
       - ./worker/tsconfig.json:/app/tsconfig.json:ro
       - ./worker/tests:/app/tests:ro
+
+  # ── Frontend Service ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eventstore-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - api
+    networks:
+      - store-net
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/tests:/app/tests
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/jest.config.ts:/app/jest.config.ts:ro
