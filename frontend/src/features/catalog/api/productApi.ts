@@ -8,7 +8,8 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { Product } from '../domain/types';
 
 interface ProductApiResponse {
-  _id: string;
+
+  id?: string;
   name: string;
   description: string;
   price: number;
@@ -21,7 +22,7 @@ export const productApi = {
     const data = await httpClient.get<ProductApiResponse[]>('/products');
 
     return data.map((p) => ({
-      _id: p._id,
+      id: p.id ?? '',
       name: p.name,
       description: p.description,
       price: p.price,
