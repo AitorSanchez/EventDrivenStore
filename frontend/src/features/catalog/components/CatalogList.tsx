@@ -27,7 +27,7 @@ const CatalogList: React.FC = () => {
   return (
     <div className="catalog-grid">
       {products.map((product) => (
-        <ProductCard key={product._id} product={product} />
+        <ProductCard key={product.id} product={product} />
       ))}
     </div>
   );
