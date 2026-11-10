@@ -4,7 +4,7 @@ import { Product } from '../../domain/types';
 
 describe('ProductCard', () => {
   const inStockProduct: Product = {
-    _id: 'prod-123',
+    id: 'prod-123',
     name: 'Wireless Mouse',
     description: 'Ergonomic 2.4GHz mouse',
     price: 29.99,
@@ -12,7 +12,7 @@ describe('ProductCard', () => {
   };
 
   const soldOutProduct: Product = {
-    _id: 'prod-456',
+    id: 'prod-456',
     name: 'Vintage Camera',
     description: 'Classic 35mm film camera',
     price: 199.5,

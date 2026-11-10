@@ -12,7 +12,7 @@ describe('productApi', () => {
     it('should fetch raw products and map them to domain Product models', async () => {
       const mockRawResponse = [
         {
-          _id: 'prod-1',
+          id: 'prod-1',
           name: 'Keyboard',
           description: 'Mechanical keyboard',
           price: 99.99,
@@ -20,7 +20,7 @@ describe('productApi', () => {
           reservedStock: 2,
         },
         {
-          _id: 'prod-2',
+          id: 'prod-2',
           name: 'Mouse',
           description: 'Gaming mouse',
           price: 49.99,
@@ -35,14 +35,14 @@ describe('productApi', () => {
       expect(httpClient.get).toHaveBeenCalledWith('/products');
       expect(products).toEqual([
         {
-          _id: 'prod-1',
+          id: 'prod-1',
           name: 'Keyboard',
           description: 'Mechanical keyboard',
           price: 99.99,
           availableStock: 10,
         },
         {
-          _id: 'prod-2',
+          id: 'prod-2',
           name: 'Mouse',
           description: 'Gaming mouse',
           price: 49.99,

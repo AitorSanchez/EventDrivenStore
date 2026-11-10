@@ -51,14 +51,14 @@ describe('CatalogList', () => {
   it('should render the list of product cards when products are loaded', () => {
     const products: Product[] = [
       {
-        _id: 'p1',
+        id: 'p1',
         name: 'Desk Lamp',
         description: 'LED dimmable light',
         price: 35.0,
         availableStock: 8,
       },
       {
-        _id: 'p2',
+        id: 'p2',
         name: 'Coffee Mug',
         description: 'Ceramic 350ml mug',
         price: 12.5,

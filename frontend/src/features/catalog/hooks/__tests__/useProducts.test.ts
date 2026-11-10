@@ -8,7 +8,7 @@ jest.mock('../../api/productApi');
 describe('useProducts', () => {
   const mockProducts: Product[] = [
     {
-      _id: '1',
+      id: '1',
       name: 'Monitor',
       description: '4K IPS display',
       price: 349.99,
